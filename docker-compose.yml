@@ -1,0 +1,46 @@
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: app
+      POSTGRES_DB: app
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  api:
+    build: ./apps/api
+    environment:
+      DATABASE_URL: postgres://app:app@db:5432/app
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
+      STRIPE_API_VERSION: ${STRIPE_API_VERSION}
+      WEB_URL: http://localhost:3001
+      PORT: 3000
+    depends_on:
+      - db
+    ports:
+      - "3000:3000"
+
+  web:
+    build: ./apps/web
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:3000
+      NEXT_PUBLIC_STRIPE_PRICE_ID: ${STRIPE_PRICE_ID}
+    depends_on:
+      - api
+    ports:
+      - "3001:3000"
+
+  stripe-cli:
+    image: stripe/stripe-cli:latest
+    command: >
+      listen --api-key ${STRIPE_SECRET_KEY}
+      --forward-to http://api:3000/webhooks/stripe
+    depends_on:
+      - api
+
+volumes:
+  pgdata:
