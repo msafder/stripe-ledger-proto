@@ -18,6 +18,7 @@ services:
       STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
       STRIPE_API_VERSION: ${STRIPE_API_VERSION}
       WEB_URL: http://localhost:3001
+      STRIPE_PRICE_ID: ${STRIPE_PRICE_ID}
       PORT: 3000
     depends_on:
       - db

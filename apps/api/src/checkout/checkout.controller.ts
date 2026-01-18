@@ -1,34 +1,67 @@
-import { Body, Controller, Inject, Post } from '@nestjs/common';
+import { Controller, Get, Post, Query } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service';
+import { Inject } from '@nestjs/common';
 import Stripe from 'stripe';
-import { STRIPE_CLIENT } from '../stripe/stripe.provider';
+import { STRIPE_CLIENT } from '../stripe/stripe.provider'; // <-- adjust to where it's actually exported from
 
 @Controller('checkout')
 export class CheckoutController {
-  constructor(@Inject(STRIPE_CLIENT) private readonly stripe: Stripe) {}
+  private readonly webUrl: string;
+  private readonly priceId: string;
 
-  @Post('session')
-  async createSession(@Body() body: { priceId: string; customerId?: string }) {
-    if (!body?.priceId) {
-      return { error: 'Missing priceId' };
+  constructor(
+    @Inject(STRIPE_CLIENT) private readonly stripe: Stripe,
+    private readonly prisma: PrismaService,
+  ) {
+    this.webUrl = process.env.WEB_URL ?? 'http://localhost:3001';
+    this.priceId = process.env.STRIPE_PRICE_ID ?? '';
+  }
+
+  @Post('create')
+  async create() {
+    if (!this.priceId) {
+      return { error: 'Missing STRIPE_PRICE_ID in env' };
     }
 
-    // For a prototype this is OK; in production, prefer a deterministic key per "order draft"
-    const idemKey = `checkout_session:${body.customerId ?? 'guest'}:${body.priceId}:${Date.now()}`;
-
-    const session = await this.stripe.checkout.sessions.create(
-      {
-        mode: 'payment',
-        line_items: [{ price: body.priceId, quantity: 1 }],
-        success_url: `${process.env.WEB_URL}/success?session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${process.env.WEB_URL}/cancel`,
-        client_reference_id: body.customerId ?? undefined,
-        metadata: {
-          prototype: 'stripe-ledger-proto'
-        }
-      },
-      { idempotencyKey: idemKey }
-    );
+    const session = await this.stripe.checkout.sessions.create({
+      mode: 'payment',
+      line_items: [{ price: this.priceId, quantity: 1 }],
+      success_url: `${this.webUrl}/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${this.webUrl}/pricing`,
+    });
 
     return { url: session.url };
+  }
+
+  @Get('status')
+  async status(@Query('session_id') sessionId?: string) {
+    if (!sessionId) return { error: 'Missing session_id' };
+
+    const session = await this.stripe.checkout.sessions.retrieve(sessionId, {
+      expand: ['payment_intent'],
+    });
+
+    const paymentIntent = session.payment_intent as Stripe.PaymentIntent | null;
+
+    const ledgerCount = await this.prisma.ledgerEntry.count({
+      where: { referenceId: sessionId },
+    });
+
+
+    return {
+      stripe: {
+        id: session.id,
+        status: session.status,
+        payment_status: session.payment_status,
+        amount_total: session.amount_total,
+        currency: session.currency,
+        customer_email: session.customer_details?.email ?? null,
+        payment_intent_id: paymentIntent?.id ?? null,
+      },
+      db: {
+        processed: ledgerCount > 0,
+        ledger_entries: ledgerCount,
+      },
+    };
   }
 }

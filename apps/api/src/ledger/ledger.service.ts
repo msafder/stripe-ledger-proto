@@ -36,22 +36,22 @@ export class LedgerService {
         await tx.ledgerEntry.createMany({
           data: [
             {
-              referenceType: 'stripe_event',
-              referenceId: event.id,
+              referenceType: 'stripe_checkout_session',
+              referenceId: session.id, // ✅ cs_...
               accountCode: 'STRIPE_CLEARING',
               amountCents: amount,
               currency,
-              description: `Checkout completed: ${session.id}`
+              description: `Checkout completed: ${session.id} (event ${event.id})`,
             },
             {
-              referenceType: 'stripe_event',
-              referenceId: event.id,
+              referenceType: 'stripe_checkout_session',
+              referenceId: session.id, // ✅ cs_...
               accountCode: 'REVENUE',
               amountCents: -amount,
               currency,
-              description: `Recognize revenue: ${session.id}`
-            }
-          ]
+              description: `Recognize revenue (event ${event.id})`,
+            },
+          ],
         });
       }
 

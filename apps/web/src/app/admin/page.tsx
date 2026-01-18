@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://api:3000";
 
+
 async function getJson(path: string) {
   const url = `${API_BASE}${path}`;
   const r = await fetch(url, { cache: "no-store" });
@@ -11,6 +12,11 @@ async function getJson(path: string) {
   return JSON.parse(text);
 }
 
+function truncateMiddle(value: string, start = 10, end = 6) {
+  if (value.length <= start + end + 3) return value;
+  return `${value.slice(0, start)}…${value.slice(-end)}`;
+}
+
 function formatCents(centsStr: string, currency: string) {
   const cents = Number(centsStr);
   return new Intl.NumberFormat(undefined, {
@@ -18,6 +24,16 @@ function formatCents(centsStr: string, currency: string) {
     currency: currency.toUpperCase(),
   }).format(cents / 100);
 }
+
+const COL = {
+  time: 210,
+  account: 160,
+  currency: 70,
+  amount: 60,
+} as const;
+
+const td = { padding: "6px 12px", verticalAlign: "top" as const };
+const th = { padding: "8px 12px", verticalAlign: "bottom" as const };
 
 export default async function AdminPage() {
   const [balances, entries] = await Promise.all([
@@ -31,7 +47,7 @@ export default async function AdminPage() {
       <p>Balances and latest ledger entries from Postgres.</p>
 
       <h2>Balances</h2>
-      <div style={{ border: "1px solid #ddd", borderRadius: 12, padding: 12 }}>
+      <div style={{ border: "1px solid #ddd", borderRadius: 12, padding: 12, overflowX: "hidden" }}>
         {Array.isArray(balances) && balances.length ? (
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
@@ -61,26 +77,50 @@ export default async function AdminPage() {
       <h2 style={{ marginTop: 24 }}>Latest Entries</h2>
       <div style={{ border: "1px solid #ddd", borderRadius: 12, padding: 12 }}>
         {Array.isArray(entries) && entries.length ? (
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
             <thead>
               <tr>
-                <th align="left">Time</th>
-                <th align="left">Account</th>
-                <th align="left">Currency</th>
-                <th align="right">Amount</th>
-                <th align="left">Description</th>
+                <th align="left"  style={{ ...th, width: COL.time, whiteSpace: "nowrap" }}>Time</th>
+                <th align="left"  style={{ ...th, width: COL.account, whiteSpace: "nowrap" }}>Account</th>
+                <th align="left"  style={{ ...th, width: COL.currency, whiteSpace: "nowrap" }}>Currency</th>
+                <th align="right" style={{ ...th, width: COL.amount, whiteSpace: "nowrap" }}>Amount</th>
+                <th align="left" style={th}>Description</th>
               </tr>
             </thead>
+
             <tbody>
               {entries.map((e: any) => (
                 <tr key={e.id}>
-                  <td style={{ padding: "6px 0" }}><code>{new Date(e.occurredAt).toLocaleString()}</code></td>
-                  <td style={{ padding: "6px 0" }}><code>{e.accountCode}</code></td>
-                  <td style={{ padding: "6px 0" }}><code>{e.currency}</code></td>
-                  <td style={{ padding: "6px 0" }} align="right">
+                  <td style={{ ...td, width: COL.time, whiteSpace: "nowrap" }}>
+                    <code>{new Date(e.occurredAt).toLocaleString()}</code>
+                  </td>
+
+                  <td style={{ ...td, width: COL.account, whiteSpace: "nowrap" }}>
+                    <code>{e.accountCode}</code>
+                  </td>
+
+                  <td style={{ ...td, width: COL.currency, whiteSpace: "nowrap" }}>
+                    <code>{e.currency}</code>
+                  </td>
+
+                  <td align="right" style={{ ...td, width: COL.amount, whiteSpace: "nowrap" }}>
                     {formatCents(e.amountCents, e.currency)}
                   </td>
-                  <td style={{ padding: "6px 0" }}>{e.description ?? ""}</td>
+
+                  <td
+                    style={{
+                      ...td,
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      fontFamily: "monospace",
+                      fontSize: 13,
+                      color: "#333",
+                    }}
+                    title={e.description ?? ""}
+                  >
+                    {e.description ? truncateMiddle(e.description) : ""}
+                  </td>
                 </tr>
               ))}
             </tbody>

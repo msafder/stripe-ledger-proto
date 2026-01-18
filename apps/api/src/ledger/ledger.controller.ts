@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 
 function jsonBigInt(v: any): any {
   // Prisma returns BigInt for BigInt columns; JSON can’t serialize BigInt.
+  if (v instanceof Date) return v.toISOString();
   if (typeof v === 'bigint') return v.toString();
   if (Array.isArray(v)) return v.map(jsonBigInt);
   if (v && typeof v === 'object') {
