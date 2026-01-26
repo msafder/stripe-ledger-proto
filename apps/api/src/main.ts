@@ -6,6 +6,9 @@ async function bootstrap() {
   // Disable Nest's default bodyParser so we can mount raw parsing for Stripe webhooks
   const app = await NestFactory.create(AppModule, { bodyParser: false });
 
+  // Stripe webhooks MUST receive raw bytes for signature verification
+  app.use('/webhooks/stripe', express.raw({ type: 'application/json' }));  
+
   // Normal JSON parsing for other routes
   app.use(express.json());
 
