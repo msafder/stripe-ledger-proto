@@ -1,10 +1,14 @@
 import { Controller, Headers, Inject, Post, Req, Res } from '@nestjs/common';
 import Stripe from 'stripe';
-// import { STRIPE_CLIENT } from '../stripe/stripe.provider';
+import { STRIPE_CLIENT } from '../stripe/stripe.provider';
 // import { LedgerService } from '../ledger/ledger.service';
 
 @Controller('webhooks')
 export class StripeWebhookController {
+
+  constructor(
+    @Inject(STRIPE_CLIENT) private readonly stripe: Stripe
+  ) {}    
 //   constructor(
 //     @Inject(STRIPE_CLIENT) private readonly stripe: Stripe,
 //     private readonly ledger: LedgerService
@@ -23,11 +27,11 @@ export class StripeWebhookController {
     const rawBody: Buffer = req.body;
 
     let event: Stripe.Event;
-    // try {
-    //   event = this.stripe.webhooks.constructEvent(rawBody, sig, endpointSecret);
-    // } catch (err: any) {
-    //   return res.status(400).send(`Webhook Error: ${err.message}`);
-    // }
+    try {
+      event = this.stripe.webhooks.constructEvent(rawBody, sig, endpointSecret);
+    } catch (err: any) {
+      return res.status(400).send(`Webhook Error: ${err.message}`);
+    }
 
     // await this.ledger.processStripeEvent(event);
 
