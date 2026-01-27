@@ -5,9 +5,10 @@ import { WebhooksModule } from './webhooks/webhooks.module';
 import { StripeModule } from './stripe/stripe.module';
 import { CheckoutModule } from './checkout/checkout.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { LedgerModule } from './ledger/ledger.module';
 
 @Module({
-  imports: [WebhooksModule, StripeModule, CheckoutModule, PrismaModule],
+  imports: [WebhooksModule, StripeModule, CheckoutModule, PrismaModule, LedgerModule],
   controllers: [AppController],
   providers: [AppService],
 })

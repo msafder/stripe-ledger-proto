@@ -1,18 +1,15 @@
 import { Controller, Headers, Inject, Post, Req, Res } from '@nestjs/common';
 import Stripe from 'stripe';
 import { STRIPE_CLIENT } from '../stripe/stripe.provider';
-// import { LedgerService } from '../ledger/ledger.service';
+import { LedgerService } from '../ledger/ledger.service';
 
 @Controller('webhooks')
 export class StripeWebhookController {
-
+  
   constructor(
-    @Inject(STRIPE_CLIENT) private readonly stripe: Stripe
-  ) {}    
-//   constructor(
-//     @Inject(STRIPE_CLIENT) private readonly stripe: Stripe,
-//     private readonly ledger: LedgerService
-//   ) {}
+    @Inject(STRIPE_CLIENT) private readonly stripe: Stripe,
+    private readonly ledger: LedgerService
+  ) {}
 
   @Post('stripe')
   async handle(@Req() req: any, @Res() res: any, @Headers('stripe-signature') sig?: string) {
@@ -33,7 +30,7 @@ export class StripeWebhookController {
       return res.status(400).send(`Webhook Error: ${err.message}`);
     }
 
-    // await this.ledger.processStripeEvent(event);
+    await this.ledger.processStripeEvent(event);
 
     return res.json({ received: true });
   }
