@@ -2,7 +2,7 @@ import { Controller, Get, Post, Query } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { Inject } from '@nestjs/common';
 import Stripe from 'stripe';
-import { STRIPE_CLIENT } from '../stripe/stripe.provider'; // <-- adjust to where it's actually exported from
+import { STRIPE_CLIENT } from '../stripe/stripe.provider';
 
 @Controller('checkout')
 export class CheckoutController {
@@ -46,7 +46,6 @@ export class CheckoutController {
     const ledgerCount = await this.prisma.ledgerEntry.count({
       where: { referenceId: sessionId },
     });
-
 
     return {
       stripe: {

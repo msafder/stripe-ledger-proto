@@ -5,6 +5,7 @@ import { LedgerService } from '../ledger/ledger.service';
 
 @Controller('webhooks')
 export class StripeWebhookController {
+  
   constructor(
     @Inject(STRIPE_CLIENT) private readonly stripe: Stripe,
     private readonly ledger: LedgerService

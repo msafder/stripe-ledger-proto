@@ -1,11 +1,15 @@
 import { Module } from '@nestjs/common';
-import { PrismaModule } from './prisma/prisma.module';
-import { StripeModule } from './stripe/stripe.module';
-import { LedgerModule } from './ledger/ledger.module';
-import { CheckoutModule } from './checkout/checkout.module';
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
 import { WebhooksModule } from './webhooks/webhooks.module';
+import { StripeModule } from './stripe/stripe.module';
+import { CheckoutModule } from './checkout/checkout.module';
+import { PrismaModule } from './prisma/prisma.module';
+import { LedgerModule } from './ledger/ledger.module';
 
 @Module({
-  imports: [PrismaModule, StripeModule, LedgerModule, CheckoutModule, WebhooksModule]
+  imports: [WebhooksModule, StripeModule, CheckoutModule, PrismaModule, LedgerModule],
+  controllers: [AppController],
+  providers: [AppService],
 })
 export class AppModule {}
