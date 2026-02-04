@@ -1,4 +1,5 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt/dist/jwt.service';
 import { UsersService } from 'src/users/users.service';
 
 export type AuthInput = { username: string; password: string;};
@@ -7,7 +8,9 @@ export type AuthResult = {accestoken: string; userId: number; username: string;}
 
 @Injectable()
 export class AuthService {
-    constructor(private usersService: UsersService) {}
+    constructor(private usersService: UsersService,
+        private readonly jwtService: JwtService,
+    ) {}
     
     async authenticate(input: AuthInput): Promise<AuthResult> {
         const user = await this.validateUser(input);
@@ -16,11 +19,7 @@ export class AuthService {
             throw new UnauthorizedException();
         }
 
-        return {
-            accestoken: 'fake-access',
-            userId: user.userId,
-            username: user.username
-         }
+        return this.signIn(user);
     }
 
     async validateUser(input: AuthInput): Promise<SignInData | null> {
@@ -34,5 +33,20 @@ export class AuthService {
         }   
 
         return null;
+    }
+
+    async signIn(user: SignInData): Promise<AuthResult> {
+        const tokenPayload = { 
+            sub: user.userId, 
+            username: user.username, 
+        };
+
+        const accessToken = await this.jwtService.signAsync(tokenPayload);
+
+        return {
+            accestoken: accessToken,
+            username: user.username,
+            userId: user.userId,
+        };
     }
 }
